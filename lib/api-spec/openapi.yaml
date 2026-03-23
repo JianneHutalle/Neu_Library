@@ -1,0 +1,341 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: NEU Library System API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: visitors
+    description: Visitor management
+  - name: stats
+    description: Statistics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/student:
+    post:
+      operationId: studentLogin
+      tags: [auth]
+      summary: Student login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/admin:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /visitors:
+    get:
+      operationId: getVisitors
+      tags: [visitors]
+      summary: Get all visitors
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of visitors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Visitor"
+    post:
+      operationId: createVisitor
+      tags: [visitors]
+      summary: Register a visitor (time in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVisitorRequest"
+      responses:
+        "201":
+          description: Visitor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Visitor"
+
+  /visitors/{id}/block:
+    patch:
+      operationId: toggleBlockVisitor
+      tags: [visitors]
+      summary: Block or unblock a visitor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockRequest"
+      responses:
+        "200":
+          description: Updated visitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Visitor"
+
+  /visitors/{id}/timeout:
+    patch:
+      operationId: timeOutVisitor
+      tags: [visitors]
+      summary: Time out a visitor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated visitor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Visitor"
+
+  /records:
+    get:
+      operationId: getRecords
+      tags: [visitors]
+      summary: Get all historical records
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          schema:
+            type: string
+        - in: query
+          name: endDate
+          schema:
+            type: string
+      responses:
+        "200":
+          description: All records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Visitor"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get visitor statistics
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+  /stats/chart:
+    get:
+      operationId: getChartData
+      tags: [stats]
+      summary: Get chart data for date range
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+        - in: query
+          name: endDate
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chart data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChartData"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    StudentLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        program:
+          type: string
+        reason:
+          type: string
+      required: [username, program, reason]
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        role:
+          type: string
+        name:
+          type: string
+      required: [success, role, name]
+
+    Visitor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        program:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [time_in, time_out, blocked]
+        timeIn:
+          type: string
+        timeOut:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, name, program, reason, status, timeIn, createdAt]
+
+    CreateVisitorRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        program:
+          type: string
+        reason:
+          type: string
+      required: [name, program, reason]
+
+    BlockRequest:
+      type: object
+      properties:
+        blocked:
+          type: boolean
+      required: [blocked]
+
+    Stats:
+      type: object
+      properties:
+        daily:
+          type: integer
+        weekly:
+          type: integer
+        monthly:
+          type: integer
+      required: [daily, weekly, monthly]
+
+    ChartDataPoint:
+      type: object
+      properties:
+        label:
+          type: string
+        count:
+          type: integer
+      required: [label, count]
+
+    ChartData:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChartDataPoint"
+      required: [points]
